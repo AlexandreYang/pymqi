@@ -2031,8 +2031,11 @@ class Queue:
         Unpacking only attempted if Format in previous header is
         CMQC.MQFMT_RF_HEADER_2.
         """
+        print("opts[2]", opts[2])
         if len(opts) >= 3:
+            print("opts[2]", opts[2])
             if opts[2] is not None:
+                print("opts[2]", opts[2])
                 if not isinstance(opts[2], list):
                     raise TypeError('Third item of opts should be a list.')
 
@@ -2041,6 +2044,8 @@ class Queue:
                 rfh2_headers = []
                 # If format is not CMQC.MQFMT_RF_HEADER_2 then do not parse.
                 frmt = mqmd['Format']
+                print("frmt", frmt)
+
                 while frmt == CMQC.MQFMT_RF_HEADER_2:
                     rfh2_header = RFH2()
                     rfh2_header.unpack(msg)
@@ -2048,6 +2053,7 @@ class Queue:
                     msg = msg[rfh2_header['StrucLength']:]
                     frmt = rfh2_header['Format']
                 opts[2].extend(rfh2_headers)
+                print("rfh2_headers", rfh2_headers)
             else:
                 raise AttributeError('get_opts cannot be None if passed.')
         else:
@@ -2843,6 +2849,30 @@ class PCFExecute(QueueManager):
             self._reply_queue_name = None
 
     @staticmethod
+    def unpack_header(message): # type: (bytes) -> dict
+        """Unpack PCF message to dictionary
+        """
+
+        mqcfh = CFH(Version=CMQCFC.MQCFH_VERSION_1)
+        mqcfh.unpack(message[:CMQCFC.MQCFH_STRUC_LENGTH])
+
+        if mqcfh.Version != CMQCFC.MQCFH_VERSION_1:
+            mqcfh = CFH(Version=mqcfh.Version)
+            mqcfh.unpack(message[:CMQCFC.MQCFH_STRUC_LENGTH])
+
+        if mqcfh.CompCode:
+            raise MQMIError(mqcfh.CompCode, mqcfh.Reason)
+        # res[] = value
+        # ['Command', CMQCFC.MQCMD_NONE, MQLONG_TYPE],
+        # ['MsgSeqNumber', 1, MQLONG_TYPE],
+        # ['Control', CMQCFC.MQCFC_LAST, MQLONG_TYPE],
+        # ['CompCode', CMQC.MQCC_OK, MQLONG_TYPE],
+        # ['Reason', CMQC.MQRC_NONE, MQLONG_TYPE],
+        return {
+            'Command': mqcfh.Command,
+        }
+
+    @staticmethod
     def unpack(message): # type: (bytes) -> dict
         """Unpack PCF message to dictionary
         """
@@ -2857,6 +2887,9 @@ class PCFExecute(QueueManager):
         if mqcfh.CompCode:
             raise MQMIError(mqcfh.CompCode, mqcfh.Reason)
 
+        # print("mqcfh", mqcfh)
+        # print("mqcfh.ParameterCount", mqcfh.ParameterCount)
+        # print("mqcfh.Command", mqcfh.Command)
         res = {}
         index = mqcfh.ParameterCount
         cursor = CMQCFC.MQCFH_STRUC_LENGTH
