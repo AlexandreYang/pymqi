@@ -1229,6 +1229,24 @@ class CFBS(MQOpts):
 
         super(CFBS, self).__init__(tuple(opts), **kw)
 
+class CFGR(MQOpts):
+    """ Construct an MQCFGR Structure with default values as per MQI.
+    The default values may be overridden by the optional keyword arguments 'kw'.
+    """
+
+    def __init__(self, **kw):
+        # types: (Dict[str, Any]) -> None
+        values = kw.pop('Parameters', [])
+        count = kw.pop('ParameterCount', len(values))
+
+        opts = [['Type', CMQCFC.MQCFT_INTEGER_LIST, MQLONG_TYPE],
+                ['StrucLength', CMQCFC.MQCFGR_STRUC_LENGTH, MQLONG_TYPE], # Check python 2
+                ['Parameter', 0, MQLONG_TYPE],
+                ['ParameterCount', count, MQLONG_TYPE],
+                # ['Values', values, MQLONG_TYPE, count],
+               ]
+        super(CFGR, self).__init__(tuple(opts), **kw)
+
 class CFIF(MQOpts):
     """ Construct an MQCFIF Structure with default values as per MQI.
     The default values may be overridden by the optional keyword arguments 'kw'.
@@ -1261,6 +1279,24 @@ class CFIL(MQOpts):
                 ['Values', values, MQLONG_TYPE, count],
                ]
         super(CFIL, self).__init__(tuple(opts), **kw)
+
+class CFIL64(MQOpts):
+    """ Construct an MQCFIL Structure with default values as per MQI.
+    The default values may be overridden by the optional keyword arguments 'kw'.
+    """
+    def __init__(self, **kw):
+        # types: (Dict[str, Any]) -> None
+        values = kw.pop('Values', [])
+        count = kw.pop('Count', len(values))
+        MQLONG_TYPE_64 = 'l'
+
+        opts = [['Type', CMQCFC.MQCFT_INTEGER64_LIST, MQLONG_TYPE],
+                ['StrucLength', CMQCFC.MQCFIL64_STRUC_LENGTH_FIXED + 8 * count, MQLONG_TYPE], # Check python 2
+                ['Parameter', 0, MQLONG_TYPE],
+                ['Count', count, MQLONG_TYPE],
+                ['Values', values, MQLONG_TYPE_64, count],
+               ]
+        super(CFIL64, self).__init__(tuple(opts), **kw)
 
 class CFIN(MQOpts):
     """ Construct an MQCFIN Structure with default values as per MQI.
@@ -2630,6 +2666,7 @@ class _Method:
                           and isinstance(value[0], int)):
                         parameter = CFIL(Parameter=key,
                                          Values=value)
+                        1 / 0
 
                     message = message + parameter.pack()
             elif isinstance(args_dict, list):
@@ -2853,6 +2890,27 @@ class PCFExecute(QueueManager):
                                      StrucLength=parameter.StrucLength)
                     parameter.unpack(message[cursor:cursor + parameter.StrucLength])
                 value = parameter.Values
+            elif message[cursor] == CMQCFC.MQCFT_INTEGER64_LIST:
+                parameter = CFIL64()
+                parameter.unpack(message[cursor:cursor + CMQCFC.MQCFIL64_STRUC_LENGTH_FIXED])
+                print(parameter)
+                print(res)
+                if parameter.Count > 0:
+                    parameter = CFIL64(Count=parameter.Count,
+                                     StrucLength=parameter.StrucLength)
+                    parameter.unpack(message[cursor:cursor + parameter.StrucLength])
+                value = parameter.Values
+            elif message[cursor] == CMQCFC.MQCFT_GROUP:
+                parameter = CFGR()
+                parameter.unpack(message[cursor:cursor + CMQCFC.MQCFGR_STRUC_LENGTH])
+                print(parameter)
+                print(res)
+                1/0
+                if parameter.ParameterCount > 0:
+                    parameter = CFGR(ParameterCount=parameter.ParameterCount,
+                                     StrucLength=parameter.StrucLength)
+                    parameter.unpack(message[cursor:cursor + parameter.StrucLength])
+                value = parameter.ParameterCount
             elif message[cursor] == CMQCFC.MQCFT_BYTE_STRING:
                 parameter = CFBS()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFBS_STRUC_LENGTH_FIXED])
