@@ -1239,7 +1239,7 @@ class CFGR(MQOpts):
         count = kw.pop('ParameterCount', 0)
 
         opts = [['Type', CMQCFC.MQCFT_GROUP, MQLONG_TYPE],
-                ['StrucLength', CMQCFC.MQCFGR_STRUC_LENGTH, MQLONG_TYPE], # Check python 2
+                ['StrucLength', CMQCFC.MQCFGR_STRUC_LENGTH, MQLONG_TYPE],
                 ['Parameter', 0, MQLONG_TYPE],
                 ['ParameterCount', count, MQLONG_TYPE],
                ]
@@ -1279,20 +1279,20 @@ class CFIL(MQOpts):
         super(CFIL, self).__init__(tuple(opts), **kw)
 
 class CFIL64(MQOpts):
-    """ Construct an MQCFIL Structure with default values as per MQI.
+    """ Construct an MQCFIL64 Structure with default values as per MQI.
     The default values may be overridden by the optional keyword arguments 'kw'.
     """
     def __init__(self, **kw):
         # types: (Dict[str, Any]) -> None
         values = kw.pop('Values', [])
         count = kw.pop('Count', len(values))
-        MQLONG_TYPE_64 = 'l'
+        TYPE_64 = 'l'
 
         opts = [['Type', CMQCFC.MQCFT_INTEGER64_LIST, MQLONG_TYPE],
-                ['StrucLength', CMQCFC.MQCFIL64_STRUC_LENGTH_FIXED + 8 * count, MQLONG_TYPE], # Check python 2
+                ['StrucLength', CMQCFC.MQCFIL64_STRUC_LENGTH_FIXED + 8 * count, MQLONG_TYPE],
                 ['Parameter', 0, MQLONG_TYPE],
                 ['Count', count, MQLONG_TYPE],
-                ['Values', values, MQLONG_TYPE_64, count],
+                ['Values', values, TYPE_64, count],
                ]
         super(CFIL64, self).__init__(tuple(opts), **kw)
 
@@ -1311,17 +1311,17 @@ class CFIN(MQOpts):
         super(CFIN, self).__init__(tuple(opts), **kw)
 
 class CFIN64(MQOpts):
-    """ Construct an MQCFIN Structure with default values as per MQI.
+    """ Construct an MQCFIN64 Structure with default values as per MQI.
     The default values may be overridden by the optional keyword arguments 'kw'.
     """
     def __init__(self, **kw):
         # types: (Dict[str, Any]) -> None -> None
 
-        MQLONG_TYPE_64 = 'l'
+        TYPE_64 = 'l'
         opts = [['Type', CMQCFC.MQCFT_INTEGER64, MQLONG_TYPE],
                 ['StrucLength', CMQCFC.MQCFIN_STRUC_LENGTH, MQLONG_TYPE],
                 ['Parameter', 0, MQLONG_TYPE],
-                ['Value', 0, MQLONG_TYPE_64],
+                ['Value', 0, TYPE_64],
                ]
         super(CFIN, self).__init__(tuple(opts), **kw)
 
