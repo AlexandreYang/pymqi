@@ -2901,18 +2901,17 @@ class PCFExecute(QueueManager):
         if mqcfh.CompCode:
             raise MQMIError(mqcfh.CompCode, mqcfh.Reason)
 
+        res = {}
         index = mqcfh.ParameterCount
         cursor = CMQCFC.MQCFH_STRUC_LENGTH
-
-        res, _ = PCFExecute._unpack(cursor, index, message)
-
-        return res, mqcfh.Control
-
-    @staticmethod
-    def _unpack(cursor, index, message):
-        res = {}
-        parameter = None  # type: Optional[MQOpts]
+        parameter = None # type: Optional[MQOpts]
+        group = None
+        group_count = 0
         while (index > 0):
+            if group_count == 0:
+                group = None
+            if group is not None:
+                group_count -= 1
             if message[cursor] == CMQCFC.MQCFT_STRING:
                 parameter = CFST()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFST_STRUC_LENGTH_FIXED])
@@ -2948,8 +2947,6 @@ class PCFExecute(QueueManager):
             elif message[cursor] == CMQCFC.MQCFT_INTEGER64_LIST:
                 parameter = CFIL64()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFIL64_STRUC_LENGTH_FIXED])
-                print(parameter)
-                print(res)
                 if parameter.Count > 0:
                     parameter = CFIL64(Count=parameter.Count,
                                        StrucLength=parameter.StrucLength)
@@ -2962,7 +2959,11 @@ class PCFExecute(QueueManager):
                     parameter = CFGR(ParameterCount=parameter.ParameterCount,
                                      StrucLength=parameter.StrucLength)
                     parameter.unpack(message[cursor:cursor + parameter.StrucLength])
-                value = parameter.ParameterCount
+                group = {}
+                group_count = parameter.ParameterCount
+                index += group_count
+                res[parameter.Parameter] = res.get(parameter.Parameter, [])
+                res[parameter.Parameter].append(group)
             elif message[cursor] == CMQCFC.MQCFT_BYTE_STRING:
                 parameter = CFBS()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFBS_STRUC_LENGTH_FIXED])
@@ -2975,12 +2976,13 @@ class PCFExecute(QueueManager):
                 raise NotImplementedError('Unpack for type ({}) not implemented'.format(pcf_type))
             index -= 1
             cursor += parameter.StrucLength
-            if parameter.Type == CMQCFC.MQCFT_GROUP:
-                group_res, size = PCFExecute._unpack(cursor, value, message)
-                cursor += size
-                value = group_res
-            res[parameter.Parameter] = value
-        return res, cursor
+            if group is not None:
+                group[parameter.Parameter] = value
+            else:
+                res[parameter.Parameter] = value
+
+        return res, mqcfh.Control
+
 
 class ByteString(object):
     """ A simple wrapper around string values, suitable for passing into PyMQI
