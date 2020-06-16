@@ -2901,10 +2901,17 @@ class PCFExecute(QueueManager):
         if mqcfh.CompCode:
             raise MQMIError(mqcfh.CompCode, mqcfh.Reason)
 
-        res = {}
         index = mqcfh.ParameterCount
         cursor = CMQCFC.MQCFH_STRUC_LENGTH
-        parameter = None # type: Optional[MQOpts]
+
+        res, _ = PCFExecute._unpack(cursor, index, message)
+
+        return res, mqcfh.Control
+
+    @staticmethod
+    def _unpack(cursor, index, message):
+        res = {}
+        parameter = None  # type: Optional[MQOpts]
         while (index > 0):
             if message[cursor] == CMQCFC.MQCFT_STRING:
                 parameter = CFST()
@@ -2945,15 +2952,12 @@ class PCFExecute(QueueManager):
                 print(res)
                 if parameter.Count > 0:
                     parameter = CFIL64(Count=parameter.Count,
-                                     StrucLength=parameter.StrucLength)
+                                       StrucLength=parameter.StrucLength)
                     parameter.unpack(message[cursor:cursor + parameter.StrucLength])
                 value = parameter.Values
             elif message[cursor] == CMQCFC.MQCFT_GROUP:
                 parameter = CFGR()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFGR_STRUC_LENGTH])
-                # print("parameter", parameter)
-                # print("res", res)
-                # 1/0
                 if parameter.ParameterCount > 0:
                     parameter = CFGR(ParameterCount=parameter.ParameterCount,
                                      StrucLength=parameter.StrucLength)
@@ -2972,12 +2976,11 @@ class PCFExecute(QueueManager):
             index -= 1
             cursor += parameter.StrucLength
             if parameter.Type == CMQCFC.MQCFT_GROUP:
-                index = value
-            else:
-                res[parameter.Parameter] = value
-
-        return res, mqcfh.Control
-
+                group_res, size = PCFExecute._unpack(cursor, value, message)
+                cursor += size
+                value = group_res
+            res[parameter.Parameter] = value
+        return res, cursor
 
 class ByteString(object):
     """ A simple wrapper around string values, suitable for passing into PyMQI
