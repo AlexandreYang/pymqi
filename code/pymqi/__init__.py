@@ -1239,13 +1239,14 @@ class CFGR(MQOpts):
         values = kw.pop('Parameters', [])
         count = kw.pop('ParameterCount', len(values))
 
-        opts = [['Type', CMQCFC.MQCFT_INTEGER_LIST, MQLONG_TYPE],
+        opts = [['Type', CMQCFC.MQCFT_GROUP, MQLONG_TYPE],
                 ['StrucLength', CMQCFC.MQCFGR_STRUC_LENGTH, MQLONG_TYPE], # Check python 2
                 ['Parameter', 0, MQLONG_TYPE],
                 ['ParameterCount', count, MQLONG_TYPE],
                 # ['Values', values, MQLONG_TYPE, count],
                ]
         super(CFGR, self).__init__(tuple(opts), **kw)
+
 
 class CFIF(MQOpts):
     """ Construct an MQCFIF Structure with default values as per MQI.
@@ -1309,6 +1310,21 @@ class CFIN(MQOpts):
                 ['StrucLength', CMQCFC.MQCFIN_STRUC_LENGTH, MQLONG_TYPE],
                 ['Parameter', 0, MQLONG_TYPE],
                 ['Value', 0, MQLONG_TYPE],
+               ]
+        super(CFIN, self).__init__(tuple(opts), **kw)
+
+class CFIN64(MQOpts):
+    """ Construct an MQCFIN Structure with default values as per MQI.
+    The default values may be overridden by the optional keyword arguments 'kw'.
+    """
+    def __init__(self, **kw):
+        # types: (Dict[str, Any]) -> None -> None
+
+        MQLONG_TYPE_64 = 'l'
+        opts = [['Type', CMQCFC.MQCFT_INTEGER64, MQLONG_TYPE],
+                ['StrucLength', CMQCFC.MQCFIN_STRUC_LENGTH, MQLONG_TYPE],
+                ['Parameter', 0, MQLONG_TYPE],
+                ['Value', 0, MQLONG_TYPE_64],
                ]
         super(CFIN, self).__init__(tuple(opts), **kw)
 
@@ -2672,8 +2688,6 @@ class _Method:
                           and isinstance(value[0], int)):
                         parameter = CFIL(Parameter=key,
                                          Values=value)
-                        1 / 0
-
                     message = message + parameter.pack()
             elif isinstance(args_dict, list):
                 for parameter in args_dict:
@@ -2887,9 +2901,6 @@ class PCFExecute(QueueManager):
         if mqcfh.CompCode:
             raise MQMIError(mqcfh.CompCode, mqcfh.Reason)
 
-        # print("mqcfh", mqcfh)
-        # print("mqcfh.ParameterCount", mqcfh.ParameterCount)
-        # print("mqcfh.Command", mqcfh.Command)
         res = {}
         index = mqcfh.ParameterCount
         cursor = CMQCFC.MQCFH_STRUC_LENGTH
@@ -2915,6 +2926,10 @@ class PCFExecute(QueueManager):
                 parameter = CFIN()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFIN_STRUC_LENGTH])
                 value = parameter.Value
+            elif message[cursor] == CMQCFC.MQCFT_INTEGER64:
+                parameter = CFIN()
+                parameter.unpack(message[cursor:cursor + CMQCFC.MQCFIN_STRUC_LENGTH])
+                value = parameter.Value
             elif message[cursor] == CMQCFC.MQCFT_INTEGER_LIST:
                 parameter = CFIL()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFIL_STRUC_LENGTH_FIXED])
@@ -2936,9 +2951,9 @@ class PCFExecute(QueueManager):
             elif message[cursor] == CMQCFC.MQCFT_GROUP:
                 parameter = CFGR()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFGR_STRUC_LENGTH])
-                print(parameter)
-                print(res)
-                1/0
+                # print("parameter", parameter)
+                # print("res", res)
+                # 1/0
                 if parameter.ParameterCount > 0:
                     parameter = CFGR(ParameterCount=parameter.ParameterCount,
                                      StrucLength=parameter.StrucLength)
@@ -2956,7 +2971,10 @@ class PCFExecute(QueueManager):
                 raise NotImplementedError('Unpack for type ({}) not implemented'.format(pcf_type))
             index -= 1
             cursor += parameter.StrucLength
-            res[parameter.Parameter] = value
+            if parameter.Type == CMQCFC.MQCFT_GROUP:
+                index = value
+            else:
+                res[parameter.Parameter] = value
 
         return res, mqcfh.Control
 
