@@ -1236,17 +1236,14 @@ class CFGR(MQOpts):
 
     def __init__(self, **kw):
         # types: (Dict[str, Any]) -> None
-        values = kw.pop('Parameters', [])
-        count = kw.pop('ParameterCount', len(values))
+        count = kw.pop('ParameterCount', 0)
 
         opts = [['Type', CMQCFC.MQCFT_GROUP, MQLONG_TYPE],
                 ['StrucLength', CMQCFC.MQCFGR_STRUC_LENGTH, MQLONG_TYPE], # Check python 2
                 ['Parameter', 0, MQLONG_TYPE],
                 ['ParameterCount', count, MQLONG_TYPE],
-                # ['Values', values, MQLONG_TYPE, count],
                ]
         super(CFGR, self).__init__(tuple(opts), **kw)
-
 
 class CFIF(MQOpts):
     """ Construct an MQCFIF Structure with default values as per MQI.
@@ -2964,6 +2961,8 @@ class PCFExecute(QueueManager):
                 index += group_count
                 res[parameter.Parameter] = res.get(parameter.Parameter, [])
                 res[parameter.Parameter].append(group)
+                # TODO:  It's possible that a group is not a list.
+                #        https://gist.github.com/AlexandreYang/03d3407f864fab3580dbb87d8da1cf95#file-amqsevta-c-L1340-L1354
             elif message[cursor] == CMQCFC.MQCFT_BYTE_STRING:
                 parameter = CFBS()
                 parameter.unpack(message[cursor:cursor + CMQCFC.MQCFBS_STRUC_LENGTH_FIXED])
