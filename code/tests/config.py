@@ -10,7 +10,7 @@ class MQ:
 
     # Queue manager connection setup
     class QM:
-        NAME = os.environ.get('PYMQI_TEST_QM_NAME', 'MQTEST')
+        NAME = os.environ.get('PYMQI_TEST_QM_NAME', 'QM1')
         HOST = os.environ.get('PYMQI_TEST_QM_HOST', '127.0.0.1')
         PORT = os.environ.get('PYMQI_TEST_QM_PORT', '8887')
         CHANNEL = os.environ.get('PYMQI_TEST_QM_CHANNEL', 'CH1')

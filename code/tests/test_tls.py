@@ -97,6 +97,18 @@ class TestTLS(Tests):
         cls._key_repo_location_qmgr = cls.qmgr.inquire(pymqi.CMQC.MQCA_SSL_KEY_REPOSITORY)
         cls._certificate_label_qmgr = cls.qmgr.inquire(pymqi.CMQC.MQCA_CERT_LABEL)
 
+        print("cls.tls_channel_name:", cls.tls_channel_name)
+        print("cls.cypher_spec:", cls.cypher_spec)
+        print("cls.client_dn:", cls.client_dn)
+        print("cls.certificate_label_qmgr:", cls.certificate_label_qmgr)
+        print("cls.certificate_label_client:", cls.certificate_label_client)
+        print("cls.key_repo_location_qmgr:", cls.key_repo_location_qmgr)
+        print("cls.key_repo_location_client:", cls.key_repo_location_client)
+        print("cls.key_repo_location_client_path:", cls.key_repo_location_client_path)
+        print("cls.key_repo_location_qmgr_path:", cls.key_repo_location_qmgr_path)
+        print("cls._key_repo_location_qmgr:", cls._key_repo_location_qmgr)
+        print("cls._certificate_label_qmgr:", cls._certificate_label_qmgr)
+
         attrs = []
         attrs.append(pymqi.CFST(Parameter=pymqi.CMQC.MQCA_SSL_KEY_REPOSITORY,
                                 String=cls.key_repo_location_qmgr_path))
@@ -211,10 +223,18 @@ class TestTLS(Tests):
                       ConnectionName=conn_info,
                       SSLCipherSpec=self.cypher_spec)
 
+
+
         sco = pymqi.SCO(Version=pymqi.CMQC.MQSCO_VERSION_5,
                         KeyRepository=os.path.join(self.key_repo_location_client,
                                                    self.certificate_label_client),
                         CertificateLabel=self.certificate_label_client)
+
+        print("SSLCipherSpec", self.cypher_spec)
+        print("KeyRepository", os.path.join(self.key_repo_location_client, self.certificate_label_client))
+        print("CertificateLabel", self.certificate_label_client)
+        print("user", self.user)
+        print("user", self.password)
 
         opts = pymqi.CMQC.MQCNO_HANDLE_SHARE_NO_BLOCK
 
